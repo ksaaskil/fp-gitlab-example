@@ -7,27 +7,26 @@ import {
   GitLabMRCommit,
   GitLabNote,
   GitLabUserProfile,
-  RepoMetaData
-} from "./GitLabDSL"
+  RepoMetaData,
+} from "./GitLabDSL";
 
 import { Gitlab } from "gitlab";
 
 // K.S. Simplify by import debug
 import debug from "debug";
 
-export type GitLabAPIToken = string
+export type GitLabAPIToken = string;
 
 export interface GitLabAPICredentials {
-  host: string
-  token: GitLabAPIToken
+  host: string;
+  token: GitLabAPIToken;
 }
 
-// K.S. 
-export function getGitLabAPICredentials = () => ({
+// K.S.
+export const getGitLabAPICredentials = (): GitLabAPICredentials => ({
   host: "https://gitlab.com",
   token: "SOMETHING_REALLY_SECRET",
 });
-
 
 /* export function getGitLabAPICredentialsFromEnv(env: Env): GitLabAPICredentials {
   let host = "https://gitlab.com"
@@ -47,165 +46,240 @@ export function getGitLabAPICredentials = () => ({
 
 class GitLabAPI {
   private readonly api: any;
-  private readonly hostURL: string
-  private readonly d = debug("GitLabAPI")
+  private readonly hostURL: string;
+  private readonly d = debug("GitLabAPI");
 
-  constructor(public readonly repoMetadata: RepoMetaData, public readonly repoCredentials: GitLabAPICredentials) {
-    this.api = new Gitlab(repoCredentials)
-    this.hostURL = repoCredentials.host
+  constructor(
+    public readonly repoMetadata: RepoMetaData,
+    public readonly repoCredentials: GitLabAPICredentials
+  ) {
+    this.api = new Gitlab(repoCredentials);
+    this.hostURL = repoCredentials.host;
   }
 
   get projectURL(): string {
-    return `${this.hostURL}/${this.repoMetadata.repoSlug}`
+    return `${this.hostURL}/${this.repoMetadata.repoSlug}`;
   }
 
   get mergeRequestURL(): string {
-    return `${this.projectURL}/merge_requests/${this.repoMetadata.pullRequestID}`
+    return `${this.projectURL}/merge_requests/${
+      this.repoMetadata.pullRequestID
+    }`;
   }
 
   getUser = async (): Promise<GitLabUserProfile> => {
-    this.d("getUser")
-    const user: GitLabUserProfile = await this.api.Users.current()
-    this.d("getUser", user)
-    return user
-  }
+    this.d("getUser");
+    const user: GitLabUserProfile = await this.api.Users.current();
+    this.d("getUser", user);
+    return user;
+  };
 
   getMergeRequestInfo = async (): Promise<GitLabMR> => {
-    this.d(`getMergeRequestInfo for repo: ${this.repoMetadata.repoSlug} pr: ${this.repoMetadata.pullRequestID}`)
-    const mr: GitLabMR = await this.api.MergeRequests.show(this.repoMetadata.repoSlug, this.repoMetadata.pullRequestID)
-    this.d("getMergeRequestInfo", mr)
-    return mr
-  }
+    this.d(
+      `getMergeRequestInfo for repo: ${this.repoMetadata.repoSlug} pr: ${
+        this.repoMetadata.pullRequestID
+      }`
+    );
+    const mr: GitLabMR = await this.api.MergeRequests.show(
+      this.repoMetadata.repoSlug,
+      this.repoMetadata.pullRequestID
+    );
+    this.d("getMergeRequestInfo", mr);
+    return mr;
+  };
 
   getMergeRequestChanges = async (): Promise<GitLabMRChange[]> => {
-    this.d(`getMergeRequestChanges for repo: ${this.repoMetadata.repoSlug} pr: ${this.repoMetadata.pullRequestID}`)
+    this.d(
+      `getMergeRequestChanges for repo: ${this.repoMetadata.repoSlug} pr: ${
+        this.repoMetadata.pullRequestID
+      }`
+    );
     const mr = (await this.api.MergeRequests.changes(
       this.repoMetadata.repoSlug,
       this.repoMetadata.pullRequestID
-    )) as GitLabMRChanges
+    )) as GitLabMRChanges;
 
-    this.d("getMergeRequestChanges", mr.changes)
-    return mr.changes
-  }
+    this.d("getMergeRequestChanges", mr.changes);
+    return mr.changes;
+  };
 
   getMergeRequestCommits = async (): Promise<GitLabMRCommit[]> => {
-    this.d("getMergeRequestCommits", this.repoMetadata.repoSlug, this.repoMetadata.pullRequestID)
+    this.d(
+      "getMergeRequestCommits",
+      this.repoMetadata.repoSlug,
+      this.repoMetadata.pullRequestID
+    );
     const commits: GitLabMRCommit[] = await this.api.MergeRequests.commits(
       this.repoMetadata.repoSlug,
       this.repoMetadata.pullRequestID
-    )
-    this.d("getMergeRequestCommits", commits)
-    return commits
-  }
+    );
+    this.d("getMergeRequestCommits", commits);
+    return commits;
+  };
 
   getMergeRequestNotes = async (): Promise<GitLabNote[]> => {
-    this.d("getMergeRequestNotes", this.repoMetadata.repoSlug, this.repoMetadata.pullRequestID)
-    const api = this.api.MergeRequestNotes
-    const notes: GitLabNote[] = await api.all(this.repoMetadata.repoSlug, this.repoMetadata.pullRequestID)
-    this.d("getMergeRequestNotes", notes)
-    return notes
-  }
+    this.d(
+      "getMergeRequestNotes",
+      this.repoMetadata.repoSlug,
+      this.repoMetadata.pullRequestID
+    );
+    const api = this.api.MergeRequestNotes;
+    const notes: GitLabNote[] = await api.all(
+      this.repoMetadata.repoSlug,
+      this.repoMetadata.pullRequestID
+    );
+    this.d("getMergeRequestNotes", notes);
+    return notes;
+  };
 
   getMergeRequestInlineNotes = async (): Promise<GitLabInlineNote[]> => {
-    this.d("getMergeRequestInlineNotes")
-    const notes: GitLabNote[] = await this.getMergeRequestNotes()
-    const inlineNotes = notes.filter((note: GitLabNote) => note.type == "DiffNote") as GitLabInlineNote[]
-    this.d("getMergeRequestInlineNotes", inlineNotes)
-    return inlineNotes
-  }
+    this.d("getMergeRequestInlineNotes");
+    const notes: GitLabNote[] = await this.getMergeRequestNotes();
+    const inlineNotes = notes.filter(
+      (note: GitLabNote) => note.type == "DiffNote"
+    ) as GitLabInlineNote[];
+    this.d("getMergeRequestInlineNotes", inlineNotes);
+    return inlineNotes;
+  };
 
-  createMergeRequestDiscussion = async (content: string, position: GitLabDiscussionTextPosition): Promise<string> => {
+  createMergeRequestDiscussion = async (
+    content: string,
+    position: GitLabDiscussionTextPosition
+  ): Promise<string> => {
     this.d(
       "createMergeRequestDiscussion",
       this.repoMetadata.repoSlug,
       this.repoMetadata.pullRequestID,
       content,
       position
-    )
-    const api = this.api.MergeRequestDiscussions
+    );
+    const api = this.api.MergeRequestDiscussions;
 
     try {
-      const result: string = await api.create(this.repoMetadata.repoSlug, this.repoMetadata.pullRequestID, content, {
-        position: position,
-      })
-      this.d("createMergeRequestDiscussion", result)
-      return result
+      const result: string = await api.create(
+        this.repoMetadata.repoSlug,
+        this.repoMetadata.pullRequestID,
+        content,
+        {
+          position: position,
+        }
+      );
+      this.d("createMergeRequestDiscussion", result);
+      return result;
     } catch (e) {
-      this.d("createMergeRequestDiscussion", e)
-      throw e
+      this.d("createMergeRequestDiscussion", e);
+      throw e;
     }
-  }
+  };
 
   createMergeRequestNote = async (body: string): Promise<GitLabNote> => {
-    this.d("createMergeRequestNote", this.repoMetadata.repoSlug, this.repoMetadata.pullRequestID, body)
-    const api = this.api.MergeRequestNotes
+    this.d(
+      "createMergeRequestNote",
+      this.repoMetadata.repoSlug,
+      this.repoMetadata.pullRequestID,
+      body
+    );
+    const api = this.api.MergeRequestNotes;
 
     try {
-      this.d("createMergeRequestNote")
-      const note: GitLabNote = await api.create(this.repoMetadata.repoSlug, this.repoMetadata.pullRequestID, body)
-      this.d("createMergeRequestNote", note)
-      return note
+      this.d("createMergeRequestNote");
+      const note: GitLabNote = await api.create(
+        this.repoMetadata.repoSlug,
+        this.repoMetadata.pullRequestID,
+        body
+      );
+      this.d("createMergeRequestNote", note);
+      return note;
     } catch (e) {
-      this.d("createMergeRequestNote", e)
+      this.d("createMergeRequestNote", e);
     }
 
-    return Promise.reject()
-  }
+    return Promise.reject();
+  };
 
-  updateMergeRequestNote = async (id: number, body: string): Promise<GitLabNote> => {
-    this.d("updateMergeRequestNote", this.repoMetadata.repoSlug, this.repoMetadata.pullRequestID, id, body)
-    const api = this.api.MergeRequestNotes
+  updateMergeRequestNote = async (
+    id: number,
+    body: string
+  ): Promise<GitLabNote> => {
+    this.d(
+      "updateMergeRequestNote",
+      this.repoMetadata.repoSlug,
+      this.repoMetadata.pullRequestID,
+      id,
+      body
+    );
+    const api = this.api.MergeRequestNotes;
     try {
-      const note: GitLabNote = await api.edit(this.repoMetadata.repoSlug, this.repoMetadata.pullRequestID, id, body)
-      this.d("updateMergeRequestNote", note)
-      return note
+      const note: GitLabNote = await api.edit(
+        this.repoMetadata.repoSlug,
+        this.repoMetadata.pullRequestID,
+        id,
+        body
+      );
+      this.d("updateMergeRequestNote", note);
+      return note;
     } catch (e) {
-      this.d("updateMergeRequestNote", e)
+      this.d("updateMergeRequestNote", e);
     }
 
-    return Promise.reject()
-  }
+    return Promise.reject();
+  };
 
   // note: deleting the _only_ note in a discussion also deletes the discussion \o/
   deleteMergeRequestNote = async (id: number): Promise<boolean> => {
-    this.d("deleteMergeRequestNote", this.repoMetadata.repoSlug, this.repoMetadata.pullRequestID, id)
-    const api = this.api.MergeRequestNotes
+    this.d(
+      "deleteMergeRequestNote",
+      this.repoMetadata.repoSlug,
+      this.repoMetadata.pullRequestID,
+      id
+    );
+    const api = this.api.MergeRequestNotes;
 
     try {
-      await api.remove(this.repoMetadata.repoSlug, this.repoMetadata.pullRequestID, id)
-      this.d("deleteMergeRequestNote", true)
-      return true
+      await api.remove(
+        this.repoMetadata.repoSlug,
+        this.repoMetadata.pullRequestID,
+        id
+      );
+      this.d("deleteMergeRequestNote", true);
+      return true;
     } catch (e) {
-      this.d("deleteMergeRequestNote", e)
-      return false
+      this.d("deleteMergeRequestNote", e);
+      return false;
     }
-  }
+  };
 
-  getFileContents = async (path: string, slug?: string, ref?: string): Promise<string> => {
-    this.d(`getFileContents requested for path:${path}, slug:${slug}, ref:${ref}`)
-    const api = this.api.RepositoryFiles
-    const projectId = slug || this.repoMetadata.repoSlug
+  getFileContents = async (
+    path: string,
+    slug?: string,
+    ref?: string
+  ): Promise<string> => {
+    this.d(
+      `getFileContents requested for path:${path}, slug:${slug}, ref:${ref}`
+    );
+    const api = this.api.RepositoryFiles;
+    const projectId = slug || this.repoMetadata.repoSlug;
     // Use the current state of PR if no ref is passed
     if (!ref) {
-      const mr: GitLabMR = await this.getMergeRequestInfo()
-      ref = mr.diff_refs.head_sha
+      const mr: GitLabMR = await this.getMergeRequestInfo();
+      ref = mr.diff_refs.head_sha;
     }
 
     try {
-      this.d("getFileContents", projectId, path, ref)
-      const response = await api.show(projectId, path, ref)
-      const result: string = Buffer.from(response.content, "base64").toString()
-      this.d("getFileContents", result)
-      return result
+      this.d("getFileContents", projectId, path, ref);
+      const response = await api.show(projectId, path, ref);
+      const result: string = Buffer.from(response.content, "base64").toString();
+      this.d("getFileContents", result);
+      return result;
     } catch (e) {
-      this.d("getFileContents", e)
+      this.d("getFileContents", e);
       // GitHubAPI.fileContents returns "" when the file does not exist, keep it consistent across providers
       if (e.response.status === 404) {
-        return ""
+        return "";
       }
-      throw e
+      throw e;
     }
-  }
+  };
 }
 
-export default GitLabAPI
+export default GitLabAPI;
