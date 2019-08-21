@@ -1,3 +1,5 @@
+import debug from "debug";
+import { Gitlab } from "gitlab";
 import {
   GitLabDiscussionTextPosition,
   GitLabInlineNote,
@@ -10,11 +12,6 @@ import {
   RepoMetaData,
 } from "./GitLabDSL";
 
-import { Gitlab } from "gitlab";
-
-// K.S. Simplify by import debug
-import debug from "debug";
-
 export type GitLabAPIToken = string;
 
 export interface GitLabAPICredentials {
@@ -22,7 +19,7 @@ export interface GitLabAPICredentials {
   token: GitLabAPIToken;
 }
 
-// K.S.
+// K.S. Simplify with mock credentials instead of reading from env
 export const getGitLabAPICredentials = (): GitLabAPICredentials => ({
   host: "https://gitlab.com",
   token: "SOMETHING_REALLY_SECRET",
