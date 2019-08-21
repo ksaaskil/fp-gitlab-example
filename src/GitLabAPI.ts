@@ -41,8 +41,10 @@ export const getGitLabAPICredentials = (): GitLabAPICredentials => ({
   }
 } */
 
+type Gitlab = InstanceType<typeof Gitlab>;
+
 class GitLabAPI {
-  private readonly api: any;
+  private readonly api: Gitlab;
   private readonly hostURL: string;
   private readonly d = debug("GitLabAPI");
 
@@ -66,7 +68,7 @@ class GitLabAPI {
 
   getUser = async (): Promise<GitLabUserProfile> => {
     this.d("getUser");
-    const user: GitLabUserProfile = await this.api.Users.current();
+    const user: GitLabUserProfile = (await this.api.Users.current()) as GitLabUserProfile;
     this.d("getUser", user);
     return user;
   };
@@ -77,10 +79,10 @@ class GitLabAPI {
         this.repoMetadata.pullRequestID
       }`
     );
-    const mr: GitLabMR = await this.api.MergeRequests.show(
+    const mr: GitLabMR = (await this.api.MergeRequests.show(
       this.repoMetadata.repoSlug,
-      this.repoMetadata.pullRequestID
-    );
+      parseInt(this.repoMetadata.pullRequestID, 10)
+    )) as GitLabMR;
     this.d("getMergeRequestInfo", mr);
     return mr;
   };
@@ -93,7 +95,7 @@ class GitLabAPI {
     );
     const mr = (await this.api.MergeRequests.changes(
       this.repoMetadata.repoSlug,
-      this.repoMetadata.pullRequestID
+      parseInt(this.repoMetadata.pullRequestID, 10)
     )) as GitLabMRChanges;
 
     this.d("getMergeRequestChanges", mr.changes);
@@ -106,10 +108,10 @@ class GitLabAPI {
       this.repoMetadata.repoSlug,
       this.repoMetadata.pullRequestID
     );
-    const commits: GitLabMRCommit[] = await this.api.MergeRequests.commits(
+    const commits: GitLabMRCommit[] = (await this.api.MergeRequests.commits(
       this.repoMetadata.repoSlug,
-      this.repoMetadata.pullRequestID
-    );
+      parseInt(this.repoMetadata.pullRequestID, 10)
+    )) as GitLabMRCommit[];
     this.d("getMergeRequestCommits", commits);
     return commits;
   };
@@ -121,10 +123,10 @@ class GitLabAPI {
       this.repoMetadata.pullRequestID
     );
     const api = this.api.MergeRequestNotes;
-    const notes: GitLabNote[] = await api.all(
+    const notes: GitLabNote[] = (await api.all(
       this.repoMetadata.repoSlug,
       this.repoMetadata.pullRequestID
-    );
+    )) as GitLabNote[];
     this.d("getMergeRequestNotes", notes);
     return notes;
   };
@@ -153,7 +155,7 @@ class GitLabAPI {
     const api = this.api.MergeRequestDiscussions;
 
     try {
-      const result: string = await api.create(
+      const result = await api.create(
         this.repoMetadata.repoSlug,
         this.repoMetadata.pullRequestID,
         content,
@@ -162,7 +164,7 @@ class GitLabAPI {
         }
       );
       this.d("createMergeRequestDiscussion", result);
-      return result;
+      return result.toString();
     } catch (e) {
       this.d("createMergeRequestDiscussion", e);
       throw e;
@@ -180,11 +182,11 @@ class GitLabAPI {
 
     try {
       this.d("createMergeRequestNote");
-      const note: GitLabNote = await api.create(
+      const note: GitLabNote = (await api.create(
         this.repoMetadata.repoSlug,
         this.repoMetadata.pullRequestID,
         body
-      );
+      )) as GitLabNote;
       this.d("createMergeRequestNote", note);
       return note;
     } catch (e) {
@@ -207,12 +209,12 @@ class GitLabAPI {
     );
     const api = this.api.MergeRequestNotes;
     try {
-      const note: GitLabNote = await api.edit(
+      const note: GitLabNote = (await api.edit(
         this.repoMetadata.repoSlug,
         this.repoMetadata.pullRequestID,
         id,
         body
-      );
+      )) as GitLabNote;
       this.d("updateMergeRequestNote", note);
       return note;
     } catch (e) {
@@ -264,7 +266,9 @@ class GitLabAPI {
 
     try {
       this.d("getFileContents", projectId, path, ref);
-      const response = await api.show(projectId, path, ref);
+      const response = (await api.show(projectId, path, ref)) as {
+        content: string;
+      };
       const result: string = Buffer.from(response.content, "base64").toString();
       this.d("getFileContents", result);
       return result;
