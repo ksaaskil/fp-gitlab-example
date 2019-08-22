@@ -41,12 +41,13 @@ export const getGitLabAPICredentials = (): GitLabAPICredentials => ({
   }
 } */
 
+const debugLog = debug("GitLabAPI");
+
 type Gitlab = InstanceType<typeof Gitlab>;
 
 class GitLabAPI {
   private readonly api: Gitlab;
   private readonly hostURL: string;
-  private readonly d = debug("GitLabAPI");
 
   constructor(
     public readonly repoMetadata: RepoMetaData,
@@ -67,14 +68,14 @@ class GitLabAPI {
   }
 
   getUser = async (): Promise<GitLabUserProfile> => {
-    this.d("getUser");
+    debugLog("getUser");
     const user: GitLabUserProfile = (await this.api.Users.current()) as GitLabUserProfile;
-    this.d("getUser", user);
+    debugLog("getUser", user);
     return user;
   };
 
   getMergeRequestInfo = async (): Promise<GitLabMR> => {
-    this.d(
+    debugLog(
       `getMergeRequestInfo for repo: ${this.repoMetadata.repoSlug} pr: ${
         this.repoMetadata.pullRequestID
       }`
@@ -83,12 +84,12 @@ class GitLabAPI {
       this.repoMetadata.repoSlug,
       parseInt(this.repoMetadata.pullRequestID, 10)
     )) as GitLabMR;
-    this.d("getMergeRequestInfo", mr);
+    debugLog("getMergeRequestInfo", mr);
     return mr;
   };
 
   getMergeRequestChanges = async (): Promise<GitLabMRChange[]> => {
-    this.d(
+    debugLog(
       `getMergeRequestChanges for repo: ${this.repoMetadata.repoSlug} pr: ${
         this.repoMetadata.pullRequestID
       }`
@@ -98,12 +99,12 @@ class GitLabAPI {
       parseInt(this.repoMetadata.pullRequestID, 10)
     )) as GitLabMRChanges;
 
-    this.d("getMergeRequestChanges", mr.changes);
+    debugLog("getMergeRequestChanges", mr.changes);
     return mr.changes;
   };
 
   getMergeRequestCommits = async (): Promise<GitLabMRCommit[]> => {
-    this.d(
+    debugLog(
       "getMergeRequestCommits",
       this.repoMetadata.repoSlug,
       this.repoMetadata.pullRequestID
@@ -112,12 +113,12 @@ class GitLabAPI {
       this.repoMetadata.repoSlug,
       parseInt(this.repoMetadata.pullRequestID, 10)
     )) as GitLabMRCommit[];
-    this.d("getMergeRequestCommits", commits);
+    debugLog("getMergeRequestCommits", commits);
     return commits;
   };
 
   getMergeRequestNotes = async (): Promise<GitLabNote[]> => {
-    this.d(
+    debugLog(
       "getMergeRequestNotes",
       this.repoMetadata.repoSlug,
       this.repoMetadata.pullRequestID
@@ -127,17 +128,17 @@ class GitLabAPI {
       this.repoMetadata.repoSlug,
       this.repoMetadata.pullRequestID
     )) as GitLabNote[];
-    this.d("getMergeRequestNotes", notes);
+    debugLog("getMergeRequestNotes", notes);
     return notes;
   };
 
   getMergeRequestInlineNotes = async (): Promise<GitLabInlineNote[]> => {
-    this.d("getMergeRequestInlineNotes");
+    debugLog("getMergeRequestInlineNotes");
     const notes: GitLabNote[] = await this.getMergeRequestNotes();
     const inlineNotes = notes.filter(
       (note: GitLabNote) => note.type == "DiffNote"
     ) as GitLabInlineNote[];
-    this.d("getMergeRequestInlineNotes", inlineNotes);
+    debugLog("getMergeRequestInlineNotes", inlineNotes);
     return inlineNotes;
   };
 
@@ -145,7 +146,7 @@ class GitLabAPI {
     content: string,
     position: GitLabDiscussionTextPosition
   ): Promise<string> => {
-    this.d(
+    debugLog(
       "createMergeRequestDiscussion",
       this.repoMetadata.repoSlug,
       this.repoMetadata.pullRequestID,
@@ -163,16 +164,16 @@ class GitLabAPI {
           position: position,
         }
       );
-      this.d("createMergeRequestDiscussion", result);
+      debugLog("createMergeRequestDiscussion", result);
       return result.toString();
     } catch (e) {
-      this.d("createMergeRequestDiscussion", e);
+      debugLog("createMergeRequestDiscussion", e);
       throw e;
     }
   };
 
   createMergeRequestNote = async (body: string): Promise<GitLabNote> => {
-    this.d(
+    debugLog(
       "createMergeRequestNote",
       this.repoMetadata.repoSlug,
       this.repoMetadata.pullRequestID,
@@ -181,16 +182,16 @@ class GitLabAPI {
     const api = this.api.MergeRequestNotes;
 
     try {
-      this.d("createMergeRequestNote");
+      debugLog("createMergeRequestNote");
       const note: GitLabNote = (await api.create(
         this.repoMetadata.repoSlug,
         this.repoMetadata.pullRequestID,
         body
       )) as GitLabNote;
-      this.d("createMergeRequestNote", note);
+      debugLog("createMergeRequestNote", note);
       return note;
     } catch (e) {
-      this.d("createMergeRequestNote", e);
+      debugLog("createMergeRequestNote", e);
     }
 
     return Promise.reject();
@@ -200,7 +201,7 @@ class GitLabAPI {
     id: number,
     body: string
   ): Promise<GitLabNote> => {
-    this.d(
+    debugLog(
       "updateMergeRequestNote",
       this.repoMetadata.repoSlug,
       this.repoMetadata.pullRequestID,
@@ -215,10 +216,10 @@ class GitLabAPI {
         id,
         body
       )) as GitLabNote;
-      this.d("updateMergeRequestNote", note);
+      debugLog("updateMergeRequestNote", note);
       return note;
     } catch (e) {
-      this.d("updateMergeRequestNote", e);
+      debugLog("updateMergeRequestNote", e);
     }
 
     return Promise.reject();
@@ -226,7 +227,7 @@ class GitLabAPI {
 
   // note: deleting the _only_ note in a discussion also deletes the discussion \o/
   deleteMergeRequestNote = async (id: number): Promise<boolean> => {
-    this.d(
+    debugLog(
       "deleteMergeRequestNote",
       this.repoMetadata.repoSlug,
       this.repoMetadata.pullRequestID,
@@ -240,10 +241,10 @@ class GitLabAPI {
         this.repoMetadata.pullRequestID,
         id
       );
-      this.d("deleteMergeRequestNote", true);
+      debugLog("deleteMergeRequestNote", true);
       return true;
     } catch (e) {
-      this.d("deleteMergeRequestNote", e);
+      debugLog("deleteMergeRequestNote", e);
       return false;
     }
   };
@@ -253,7 +254,7 @@ class GitLabAPI {
     slug?: string,
     ref?: string
   ): Promise<string> => {
-    this.d(
+    debugLog(
       `getFileContents requested for path:${path}, slug:${slug}, ref:${ref}`
     );
     const api = this.api.RepositoryFiles;
@@ -265,15 +266,15 @@ class GitLabAPI {
     }
 
     try {
-      this.d("getFileContents", projectId, path, ref);
+      debugLog("getFileContents", projectId, path, ref);
       const response = (await api.show(projectId, path, ref)) as {
         content: string;
       };
       const result: string = Buffer.from(response.content, "base64").toString();
-      this.d("getFileContents", result);
+      debugLog("getFileContents", result);
       return result;
     } catch (e) {
-      this.d("getFileContents", e);
+      debugLog("getFileContents", e);
       // GitHubAPI.fileContents returns "" when the file does not exist, keep it consistent across providers
       if (e.response.status === 404) {
         return "";
