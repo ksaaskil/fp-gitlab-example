@@ -1,5 +1,6 @@
 {
-  "name": "danger-fp-example",
+  "name": "fp-gitlab-example",
+  "description": "Example for using fp-ts to make API requests with validation",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
