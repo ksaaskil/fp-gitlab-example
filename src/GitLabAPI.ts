@@ -1,3 +1,5 @@
+// Adapted from
+// https://github.com/danger/danger-js/blob/master/source/platforms/gitlab/GitLabAPI.ts
 import debug from "debug";
 import { Gitlab } from "gitlab";
 import {
@@ -11,6 +13,19 @@ import {
   GitLabUserProfile,
   RepoMetaData,
 } from "./GitLabDSL";
+import { Lazy } from "fp-ts/lib/function";
+import {
+  chain,
+  fromEither,
+  map,
+  tryCatch,
+  TaskEither,
+} from "fp-ts/lib/TaskEither";
+import { Either, left, right, toError } from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/pipeable";
+import { flow } from "fp-ts/lib/function";
+import { GetResponse } from "gitlab/dist/infrastructure";
+import TE from "./TaskEitherUtils";
 
 export type GitLabAPIToken = string;
 
@@ -24,6 +39,8 @@ export const getGitLabAPICredentials = (): GitLabAPICredentials => ({
   host: "https://gitlab.com",
   token: "SOMETHING_REALLY_SECRET",
 });
+
+const debugLog = debug("GitLabAPI");
 
 /* export function getGitLabAPICredentialsFromEnv(env: Env): GitLabAPICredentials {
   let host = "https://gitlab.com"
@@ -41,7 +58,15 @@ export const getGitLabAPICredentials = (): GitLabAPICredentials => ({
   }
 } */
 
-const debugLog = debug("GitLabAPI");
+function hasKey<K extends string>(o: {}, k: K): o is { [_ in K]: any } {
+  return typeof o === "object" && k in o;
+}
+
+const log = (str: string) => () => {
+  debugLog(str);
+};
+
+const logValue = TE.logValueWith(debugLog);
 
 type Gitlab = InstanceType<typeof Gitlab>;
 
@@ -62,9 +87,7 @@ class GitLabAPI {
   }
 
   get mergeRequestURL(): string {
-    return `${this.projectURL}/merge_requests/${
-      this.repoMetadata.pullRequestID
-    }`;
+    return `${this.projectURL}/merge_requests/${this.repoMetadata.pullRequestID}`;
   }
 
   getUser = async (): Promise<GitLabUserProfile> => {
@@ -74,11 +97,67 @@ class GitLabAPI {
     return user;
   };
 
+  getUserFp = (): TaskEither<Error, GitLabUserProfile> => {
+    // I/O action for fetching user from API
+    const getUserThunk: Lazy<Promise<GetResponse>> = () => {
+      debugLog("getUser");
+      return this.api.Users.current();
+    };
+
+    // Validate user profile
+    const validateUserProfile = (
+      response: object
+    ): Either<Error, GitLabUserProfile> => {
+      // TODO Better validation
+      return hasKey(response, "id")
+        ? right(response as GitLabUserProfile)
+        : left(Error("Invalid user profile"));
+    };
+
+    // Pipe computations
+    return pipe(
+      getUserThunk,
+      TE.fromThunk,
+      logValue("getUser"),
+      TE.chainEither(validateUserProfile)
+    );
+  };
+
+  // Example without reusable functions
+  getUserFpShort = (): TaskEither<Error, GitLabUserProfile> => {
+    // Validate user profile
+    const validateUserProfile = (
+      response: object
+    ): Either<Error, GitLabUserProfile> => {
+      // TODO Better validation
+      return hasKey(response, "id")
+        ? right(response as GitLabUserProfile)
+        : left(Error("Invalid user profile"));
+    };
+
+    // Pipe computations
+    return pipe(
+      () => {
+        debugLog("getUser");
+        return this.api.Users.current();
+      },
+      thunk => tryCatch(thunk, toError),
+      map((obj: GetResponse) => {
+        debugLog("getUser", obj);
+        return obj;
+      }),
+      chain(
+        flow(
+          validateUserProfile,
+          fromEither
+        )
+      )
+    );
+  };
+
   getMergeRequestInfo = async (): Promise<GitLabMR> => {
     debugLog(
-      `getMergeRequestInfo for repo: ${this.repoMetadata.repoSlug} pr: ${
-        this.repoMetadata.pullRequestID
-      }`
+      `getMergeRequestInfo for repo: ${this.repoMetadata.repoSlug} pr: ${this.repoMetadata.pullRequestID}`
     );
     const mr: GitLabMR = (await this.api.MergeRequests.show(
       this.repoMetadata.repoSlug,
@@ -88,11 +167,32 @@ class GitLabAPI {
     return mr;
   };
 
+  getMergeRequestInfoFp = (): TaskEither<Error, GitLabMR> => {
+    const getMergeRequestInfoThunk: Lazy<Promise<GetResponse>> = () => {
+      debugLog(
+        `getMergeRequestInfo for repo: ${this.repoMetadata.repoSlug} pr: ${this.repoMetadata.pullRequestID}`
+      );
+      return this.api.MergeRequests.show(
+        this.repoMetadata.repoSlug,
+        parseInt(this.repoMetadata.pullRequestID, 10)
+      );
+    };
+
+    const validateMergeRequests = (response: object) => {
+      // TODO Add validation
+      return right(response as GitLabMR);
+    };
+    return pipe(
+      getMergeRequestInfoThunk,
+      TE.fromThunk,
+      logValue("getMergeRequestInfo"),
+      TE.chainEither(validateMergeRequests)
+    );
+  };
+
   getMergeRequestChanges = async (): Promise<GitLabMRChange[]> => {
     debugLog(
-      `getMergeRequestChanges for repo: ${this.repoMetadata.repoSlug} pr: ${
-        this.repoMetadata.pullRequestID
-      }`
+      `getMergeRequestChanges for repo: ${this.repoMetadata.repoSlug} pr: ${this.repoMetadata.pullRequestID}`
     );
     const mr = (await this.api.MergeRequests.changes(
       this.repoMetadata.repoSlug,
@@ -103,6 +203,32 @@ class GitLabAPI {
     return mr.changes;
   };
 
+  getMergeRequestChangesFp = (): TaskEither<Error, GitLabMRChange[]> => {
+    const getMergeRequestChangesThunk: Lazy<Promise<GetResponse>> = () => {
+      debugLog("getMergeRequestChanges");
+      return this.api.MergeRequests.changes(
+        this.repoMetadata.repoSlug,
+        parseInt(this.repoMetadata.pullRequestID, 10)
+      );
+    };
+
+    const validateMergeRequestChanges = (
+      obj: GetResponse
+    ): Either<Error, GitLabMRChanges> => {
+      return "changes" in obj
+        ? right(obj as GitLabMRChanges)
+        : left(Error("Invalid merge request"));
+    };
+
+    return pipe(
+      getMergeRequestChangesThunk,
+      TE.fromThunk,
+      TE.chainEither(validateMergeRequestChanges),
+      map((res: GitLabMRChanges) => res.changes)
+    );
+  };
+
+  // Skipped
   getMergeRequestCommits = async (): Promise<GitLabMRCommit[]> => {
     debugLog(
       "getMergeRequestCommits",
@@ -117,6 +243,7 @@ class GitLabAPI {
     return commits;
   };
 
+  // Skipped
   getMergeRequestNotes = async (): Promise<GitLabNote[]> => {
     debugLog(
       "getMergeRequestNotes",
@@ -267,9 +394,12 @@ class GitLabAPI {
 
     try {
       debugLog("getFileContents", projectId, path, ref);
-      const response = (await api.show(projectId, path, ref)) as {
-        content: string;
-      };
+      const response = await api.show(projectId, path, ref);
+      if (!hasKey(response, "content")) {
+        throw Error(
+          `Could not find content in response: ${JSON.stringify(response)}`
+        );
+      }
       const result: string = Buffer.from(response.content, "base64").toString();
       debugLog("getFileContents", result);
       return result;

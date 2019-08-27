@@ -2,6 +2,10 @@ import nock, { NockDefinition } from "nock";
 import { default as GitLabAPI, getGitLabAPICredentials } from "../GitLabAPI";
 import { resolve } from "path";
 import { readFileSync } from "fs";
+import { GitLabUserProfile } from "../GitLabDSL";
+import { TaskEither } from "fp-ts/lib/TaskEither";
+import { Either, isLeft, fold } from "fp-ts/lib/Either";
+import { identity } from "fp-ts/lib/function";
 
 nock.disableNetConnect();
 
@@ -16,6 +20,15 @@ const loadFixture = (path: string): any =>
   JSON.parse(
     readFileSync(resolve(nockBack.fixtures, `${path}.json`), {}).toString()
   )[0];
+
+/**
+ * Extract value from either or throw (if left).
+ */
+const getRight = <A>(either: Either<Error, A>): A => {
+  return fold<Error, A, A>(e => {
+    throw e;
+  }, identity)(either);
+};
 
 describe("GitLab API", () => {
   let api: GitLabAPI;
@@ -89,6 +102,23 @@ describe("GitLab API", () => {
     expect(result).toEqual(response);
   });
 
+  it("FP getUser returns the current user profile id", async () => {
+    // To re-record this you need to provide a valid DANGER_GITLAB_API_TOKEN
+
+    const { nockDone } = await nockBack("getUser.json", {
+      afterRecord: sanitizeUserResponse,
+    });
+
+    const thunk = api.getUserFp();
+
+    const resultEither: Either<Error, GitLabUserProfile> = await thunk();
+
+    const result = getRight(resultEither);
+    nockDone();
+    const { response } = loadFixture("getUser");
+    expect(result).toEqual(response);
+  });
+
   it("getMergeRequestInfo", async () => {
     const { nockDone } = await nockBack("getMergeRequestInfo.json");
     const result = await api.getMergeRequestInfo();
@@ -97,9 +127,37 @@ describe("GitLab API", () => {
     expect(result).toEqual(response);
   });
 
+  it("FP getMergeRequestInfo", async () => {
+    const { nockDone } = await nockBack("getMergeRequestInfo.json");
+    const result = await api.getMergeRequestInfoFp()();
+    nockDone();
+    const { response } = loadFixture("getMergeRequestInfo");
+    expect(getRight(result)).toEqual(response);
+  });
+
   it("getMergeRequestChanges", async () => {
     const { nockDone } = await nockBack("getMergeRequestChanges.json");
     const result = await api.getMergeRequestChanges();
+    nockDone();
+    expect(result).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          old_path: expect.any(String),
+          new_path: expect.any(String),
+          a_mode: expect.any(String),
+          b_mode: expect.any(String),
+          diff: expect.any(String),
+          new_file: expect.any(Boolean),
+          deleted_file: expect.any(Boolean),
+        }),
+      ])
+    );
+  });
+
+  it("FP getMergeRequestChanges", async () => {
+    const { nockDone } = await nockBack("getMergeRequestChanges.json");
+    const resultEither = await api.getMergeRequestChangesFp()();
+    const result = getRight(resultEither);
     nockDone();
     expect(result).toEqual(
       expect.arrayContaining([
