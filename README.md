@@ -8,7 +8,7 @@ Adapted from [GitLabAPI.ts](https://github.com/danger/danger-js/blob/master/sour
 
 _How to use TaskEither, flow and pipe for smooth pipelines_
 
-`fp-ts` is a great TypeScript library for functional programming. I haven't found that many real world usage examples out there, so I thought it might be fun to take a repository and try adding `fp-ts` there.
+[fp-ts](https://gcanti.github.io/fp-ts/) is a great TypeScript library for functional programming. I haven't found that many real world usage examples out there, so I thought it might be fun to take a repository and try adding `fp-ts` there.
 
 Through my work on [unmock-js](https://github.com/unmock/unmock-js), I've seen quite a few libraries using third-party APIs. I therefore decided to use `fp-ts` in one of those, namely [danger-js](https://github.com/danger/danger-js). Their [GitLabAPI](https://github.com/danger/danger-js/blob/master/source/platforms/gitlab/GitLabAPI.ts) class is a reasonably simple wrapper around a [GitLab SDK](https://github.com/jdalrymple/node-gitlab) and it's also easy to detach from the rest of the codebase.
 
