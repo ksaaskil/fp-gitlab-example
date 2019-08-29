@@ -355,6 +355,7 @@ This was my first post in dev.to! I hope someone finds it useful: I learned a lo
 
 ## Resources
 
-- [Getting started with fp-ts](https://dev.to/gcanti/getting-started-with-fp-ts-setoid-39f3) series
+- [Getting started with fp-ts](https://dev.to/gcanti/getting-started-with-fp-ts-setoid-39f3) series: A great way to learn `fp-ts`
 - [Interoperability with non-functional code using fp-ts](https://dev.to/gcanti/interoperability-with-non-functional-code-using-fp-ts-432e): useful article mentioning `TaskEither`
-- [Learn you a Haskell](http://learnyouahaskell.com/) book: "the funkiest way to learn Haskell"
+- [Learn you a Haskell](http://learnyouahaskell.com/) book: the funkiest way to learn Haskell, a pure functional programming language
+- [Functional programming sparks joy](https://rachelcarmena.github.io/2019/08/05/functional-programming-sparks-joy.html): A recent article on functional programming that I enjoyed
