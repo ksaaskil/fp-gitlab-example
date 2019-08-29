@@ -4,15 +4,17 @@ Adapted from [GitLabAPI.ts](https://github.com/danger/danger-js/blob/master/sour
 
 ## Post
 
-# Using fp-ts for API requests and response validation
+# Using fp-ts for API requests and validation
 
 _How to use TaskEither, flow and pipe for smooth pipelines_
 
-Recently I've studied a lot of functional programming, the art of function composition. Through my work on [unmock-js](https://github.com/unmock/unmock-js), I've also seen quite a few JS and TS libraries making calls to third-party APIs, so I thought it might be a fun exercise to see how one of those libraries could be rewritten in a more functional style!
+`fp-ts` is a great TypeScript library for functional programming. I haven't found that many real world usage examples out there, so I thought it might be fun to take a repository and try adding `fp-ts` there.
 
-As an example I chose [danger-js](https://github.com/danger/danger-js), more specifically their [GitLabAPI](https://github.com/danger/danger-js/blob/master/source/platforms/gitlab/GitLabAPI.ts) class. It's a relatively simple wrapper around the [gitlab](https://github.com/jdalrymple/node-gitlab) SDK for making API calls to the GitLab API. I'll rewrite one of the class functions to using [fp-ts](https://github.com/gcanti/fp-ts), an awesome library for functional programming in TypeScript. The full code can be found in [this repository](https://github.com/ksaaskil/fp-gitlab-example), which is a stripped down version of the `danger-js` code.
+Through my work on [unmock-js](https://github.com/unmock/unmock-js), I've seen quite a few libraries using third-party APIs. I therefore decided to use `fp-ts` in one of those, namely [danger-js](https://github.com/danger/danger-js). Their [GitLabAPI](https://github.com/danger/danger-js/blob/master/source/platforms/gitlab/GitLabAPI.ts) class is a reasonably simple wrapper around a [GitLab SDK](https://github.com/jdalrymple/node-gitlab) and it's also easy to detach from the rest of the codebase.
 
-Note that there's nothing wrong with the existing `GitLabAPI` class, it's all for practice! This post is also not meant to be about the pros and cons of using functional programming versus some other programming style. I'm also not an expert in FP, so my way of rewriting the API requests in the library is not the "correct" way. Let me know in the comments if you think this made or did not make any sense!
+The full code can be found in [this repository](https://github.com/ksaaskil/fp-gitlab-example), which is a stripped down version of the `danger-js` code.
+
+Before starting functionalizing, a few disclaimers :)There's nothing wrong with the existing `GitLabAPI` class, it's all for practice! This post is also not meant to be about the general pros and cons of using functional programming versus some other programming style. I'm also not an expert in FP, so my way of rewriting the API requests in the library is not the "correct" way. Let me know in the comments if you think this made or did not make any sense, or take my repo and write one of the methods in your own way! I'm happy to see alternative and better implementations in comments.
 
 ## Getting started
 
