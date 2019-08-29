@@ -14,7 +14,7 @@ Through my work on [unmock-js](https://github.com/unmock/unmock-js), I've seen q
 
 The full code can be found in [this repository](https://github.com/ksaaskil/fp-gitlab-example), which is a stripped down version of the `danger-js` code.
 
-Before starting functionalizing, a few disclaimers :)There's nothing wrong with the existing `GitLabAPI` class, it's all for practice! This post is also not meant to be about the general pros and cons of using functional programming versus some other programming style. I'm also not an expert in FP, so my way of rewriting the API requests in the library is not the "correct" way. Let me know in the comments if you think this made or did not make any sense, or take my repo and write one of the methods in your own way! I'm happy to see alternative and better implementations in comments.
+Before starting functionalizing, a few disclaimers :)There's nothing wrong with the existing `GitLabAPI` class, it's all for practice! This post is also not meant to be about the general pros and cons of using functional programming versus some other programming style. I'm also not an expert in FP, so my way of rewriting the API requests in the library is not the "correct" way. Let me know in the comments if you think this made or did not make any sense, or take my repo and write one of the methods in your own way! I would be happy to see alternative implementations in comments.
 
 ## Getting started
 
@@ -204,7 +204,7 @@ function hasKey<K extends string>(o: {}, k: K): o is { [_ in K]: any } {
 
 I'm being very lazy here and just checking if the response body has an `id` field (which a valid `GitLabUserProfile` should have). If it does have it, the response is cast to a `GitLabUserProfile` object and returned wrapped in a `right`, signifying successful validation. If the validation fails, we return an instance of `left` with `Error`.
 
-In the real world, we'd probably want to validate the response using, for example, `io-ts`, a great run-time type-checking library written by the author of `fp-ts`. To keep this post a bit shorter, I won't get into that here. The important point is that the validation step returns an `Either` that we want to include in our function's return value.
+In the real world, we'd probably want to validate the response using, for example, [io-ts](https://gcanti.github.io/io-ts/), a great run-time type-checking library written by the author of `fp-ts`. To keep this post a bit shorter, I won't get into that here. The important point is that the validation step returns an `Either` that we want to include in our function's return value.
 
 ## Putting it all together
 
